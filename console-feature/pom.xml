@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.ibm.liberty.admin</groupId>
+        <artifactId>console-parent</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>console-feature</artifactId>
+    <packaging>pom</packaging>
+
+    <name>Liberty Admin Console - Feature</name>
+    <description>
+        Packages the usr:console-1.0 Liberty feature in two forms:
+        an ESA (console-1.0.esa) to install with featureUtility, and a zip
+        (console-1.0-usr-extension.zip) to extract over a Liberty install (wlp/).
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.ibm.liberty.admin</groupId>
+            <artifactId>console-bundle</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Fill in the feature manifest template (versions, names) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>filter-feature-manifest</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/feature</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/feature</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Assemble the ESA and the usr/extension zip -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>package-feature</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <property name="bundle.jar" value="${bundle.symbolicName}_${project.version}.jar"/>
+                                <property name="stage" value="${project.build.directory}/stage"/>
+
+                                <!-- The bundle jar from the console-bundle module -->
+                                <dependencyfilesets prefix="deps."/>
+                                <copy todir="${stage}/bundles" overwrite="true">
+                                    <fileset refid="deps.com.ibm.liberty.admin:console-bundle:jar"/>
+                                    <mapper type="merge" to="${bundle.jar}"/>
+                                </copy>
+
+                                <!-- 1. ESA: OSGI-INF/SUBSYSTEM.MF + bundle -->
+                                <zip destfile="${project.build.directory}/${feature.shortName}.esa">
+                                    <zipfileset file="${project.build.directory}/feature/${feature.shortName}.mf"
+                                                fullpath="OSGI-INF/SUBSYSTEM.MF"/>
+                                    <zipfileset file="${stage}/bundles/${bundle.jar}"/>
+                                </zip>
+
+                                <!-- 2. Zip to extract into the directory that contains wlp/ -->
+                                <zip destfile="${project.build.directory}/${feature.shortName}-usr-extension.zip">
+                                    <!-- Same file name featureUtility uses, so both install methods end up identical -->
+                                    <zipfileset file="${project.build.directory}/feature/${feature.shortName}.mf"
+                                                fullpath="wlp/usr/extension/lib/features/${feature.symbolicName}.mf"/>
+                                    <zipfileset file="${stage}/bundles/${bundle.jar}"
+                                                prefix="wlp/usr/extension/lib"/>
+                                </zip>
+
+                                <attachartifact file="${project.build.directory}/${feature.shortName}.esa" type="esa"/>
+                                <attachartifact file="${project.build.directory}/${feature.shortName}-usr-extension.zip"
+                                                classifier="usr-extension" type="zip"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

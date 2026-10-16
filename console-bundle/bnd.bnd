@@ -1,0 +1,31 @@
+# OSGi manifest instructions for the Liberty Admin Console WAB.
+# Maven properties from the parent pom are available here.
+
+Bundle-SymbolicName: ${bundle.symbolicName}
+Bundle-Name: Liberty Admin Console
+Bundle-Description: Liberty Admin Console web application bundle (usr:${feature.shortName})
+Bundle-Vendor: IBM
+Bundle-License: https://www.apache.org/licenses/LICENSE-2.0
+
+# --- Web Application Bundle -------------------------------------------------
+# '@' means the context path is configurable. Liberty takes the real path from
+# the WABConfiguration service that ConsoleConfiguration registers. Its default
+# is /console, and it can be changed with <usr_console contextPath="..."/>.
+Web-ContextPath: @libertyAdminConsole
+
+# Authorize the web resources against the server's management roles
+# (<administrator-role> and <reader-role>), the same way Admin Center does,
+# rather than against an application-bnd.
+IBM-Authorization-Roles: com.ibm.ws.management
+
+# --- Packages ---------------------------------------------------------------
+# Nothing is exported; everything is private to the console.
+Export-Package:
+
+# Accept Jakarta Servlet 5.0 (EE 9.1), 6.0 (EE 10) and 6.1 (EE 11).
+Import-Package: \
+    jakarta.servlet.*;version="[5.0,7)",\
+    *
+
+# Keep the manifest reproducible (no Bnd-LastModified / Tool headers).
+-noextraheaders: true

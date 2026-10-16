@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Configuration for the usr:console-1.0 feature.
+
+    The ibm:alias "console" makes this the <usr_console> element in server.xml
+    (Liberty prefixes the elements of user features with "usr_"):
+
+        <usr_console contextPath="/console"/>
+-->
+<metatype:MetaData xmlns:metatype="http://www.osgi.org/xmlns/metatype/v1.1.0"
+                   xmlns:ibm="http://www.ibm.com/xmlns/appservers/osgi/metatype/v1.0.0"
+                   localization="OSGI-INF/l10n/metatype">
+
+    <OCD id="com.ibm.liberty.admin.console" ibm:alias="console"
+         name="%console.name" description="%console.desc">
+
+        <AD id="contextPath" name="%contextPath.name" description="%contextPath.desc"
+            type="String" required="false" default="/console"/>
+
+        <!-- Links this configuration to the Web-ContextPath: @libertyAdminConsole header. Not user settable. -->
+        <AD id="contextName" name="internal" description="internal use only"
+            type="String" required="false" default="libertyAdminConsole" ibm:final="true"/>
+    </OCD>
+
+    <Designate pid="com.ibm.liberty.admin.console">
+        <Object ocdref="com.ibm.liberty.admin.console"/>
+    </Designate>
+</metatype:MetaData>

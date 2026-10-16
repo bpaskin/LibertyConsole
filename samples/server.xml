@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Smallest server.xml that runs the Liberty Admin Console feature.
+    After installing the feature, open https://localhost:9443/console/
+
+    Replace the basicRegistry with your own registry (LDAP, ...) and use
+    encoded passwords (bin/securityUtility encode) outside of a test system.
+-->
+<server description="Liberty server with the Admin Console feature">
+
+    <featureManager>
+        <feature>usr:console-1.0</feature>
+
+        <!-- Optional: charts and per-application metrics on the Monitoring page.
+             /metrics keeps its default authentication; the console uses the user's sign-in. -->
+        <!-- <feature>mpMetrics-5.1</feature> -->
+    </featureManager>
+
+    <!-- Who may sign in -->
+    <basicRegistry id="basic" realm="BasicRealm">
+        <user name="admin" password="change-me"/>
+        <user name="operator" password="change-me-too"/>
+    </basicRegistry>
+
+    <!-- Full access: start/stop/deploy/remove applications, edit configuration, GC, thread dumps -->
+    <administrator-role>
+        <user>admin</user>
+    </administrator-role>
+
+    <!-- Read-only access: everything that only reads -->
+    <reader-role>
+        <user>operator</user>
+    </reader-role>
+
+    <!-- The console is HTTPS only. Liberty generates this keystore on first start;
+         `server create` puts keystore_password in server.env. -->
+    <keyStore id="defaultKeyStore" password="${keystore_password}"/>
+
+    <httpEndpoint id="defaultHttpEndpoint" host="*" httpPort="9080" httpsPort="9443"/>
+
+    <!-- Optional console setting (this is the default) -->
+    <!-- <usr_console contextPath="/console"/> -->
+
+</server>

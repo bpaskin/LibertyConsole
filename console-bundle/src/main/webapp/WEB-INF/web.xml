@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Deployment descriptor for the Liberty Admin Console web application bundle.
+
+    Security: the bundle declares "IBM-Authorization-Roles: com.ibm.ws.management",
+    so the roles below are Liberty's management roles. Users and groups get them
+    from <administrator-role> and <reader-role> in server.xml, not from an
+    application-bnd:
+      Administrator - full access
+      Reader        - read-only access (API calls that change the server return 403)
+-->
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
+         version="5.0">
+
+    <display-name>Liberty Admin Console</display-name>
+    <description>Liberty Admin Console (usr:console-1.0)</description>
+
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>
+
+    <!-- Creates the console services when the web module starts -->
+    <listener>
+        <listener-class>com.ibm.liberty.admin.web.ConsoleServices</listener-class>
+    </listener>
+
+    <!-- REST API, under /api -->
+    <servlet>
+        <servlet-name>ServerApi</servlet-name>
+        <servlet-class>com.ibm.liberty.admin.web.ServerApiServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ApplicationsApi</servlet-name>
+        <servlet-class>com.ibm.liberty.admin.web.ApplicationsApiServlet</servlet-class>
+        <multipart-config>
+            <!-- Uploaded application archives: up to 1 GB, buffered to disk above 1 MB -->
+            <max-file-size>1073741824</max-file-size>
+            <max-request-size>1074790400</max-request-size>
+            <file-size-threshold>1048576</file-size-threshold>
+        </multipart-config>
+    </servlet>
+    <servlet>
+        <servlet-name>ConfigurationApi</servlet-name>
+        <servlet-class>com.ibm.liberty.admin.web.ConfigurationApiServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>LogsApi</servlet-name>
+        <servlet-class>com.ibm.liberty.admin.web.LogsApiServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>SettingsApi</servlet-name>
+        <servlet-class>com.ibm.liberty.admin.web.SettingsApiServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>UserApi</servlet-name>
+        <servlet-class>com.ibm.liberty.admin.web.UserApiServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ApiNotFound</servlet-name>
+        <servlet-class>com.ibm.liberty.admin.web.ApiNotFoundServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ServerApi</servlet-name>
+        <url-pattern>/api/server/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ApplicationsApi</servlet-name>
+        <url-pattern>/api/applications/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ConfigurationApi</servlet-name>
+        <url-pattern>/api/configuration/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>LogsApi</servlet-name>
+        <url-pattern>/api/logs/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>SettingsApi</servlet-name>
+        <url-pattern>/api/settings/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>UserApi</servlet-name>
+        <url-pattern>/api/user/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ApiNotFound</servlet-name>
+        <url-pattern>/api/*</url-pattern>
+    </servlet-mapping>
+
+    <session-config>
+        <session-timeout>30</session-timeout>
+        <cookie-config>
+            <http-only>true</http-only>
+            <secure>true</secure>
+        </cookie-config>
+    </session-config>
+
+    <!-- Everything needs a management role and HTTPS, unless a constraint below says otherwise -->
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>Console</web-resource-name>
+            <url-pattern>/*</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <role-name>Administrator</role-name>
+            <role-name>Reader</role-name>
+        </auth-constraint>
+        <user-data-constraint>
+            <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+        </user-data-constraint>
+    </security-constraint>
+
+    <!-- The login pages and what they load: no authentication, but still HTTPS -->
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>Login resources</web-resource-name>
+            <url-pattern>/login.html</url-pattern>
+            <url-pattern>/login-error.html</url-pattern>
+            <url-pattern>/css/*</url-pattern>
+            <url-pattern>/websphere-liberty-logo.png</url-pattern>
+            <http-method>GET</http-method>
+        </web-resource-collection>
+        <user-data-constraint>
+            <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+        </user-data-constraint>
+    </security-constraint>
+
+    <!-- Logout must work for a user whose session already expired -->
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>Logout</web-resource-name>
+            <url-pattern>/ibm_security_logout</url-pattern>
+        </web-resource-collection>
+        <user-data-constraint>
+            <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+        </user-data-constraint>
+    </security-constraint>
+
+    <!-- Bundle internals (classes, OSGi metadata) are never served -->
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>Bundle internals</web-resource-name>
+            <url-pattern>/com/*</url-pattern>
+            <url-pattern>/OSGI-INF/*</url-pattern>
+            <url-pattern>/META-INF/*</url-pattern>
+            <url-pattern>*.class</url-pattern>
+        </web-resource-collection>
+        <auth-constraint/>
+    </security-constraint>
+
+    <security-role>
+        <description>Full access (server.xml administrator-role)</description>
+        <role-name>Administrator</role-name>
+    </security-role>
+    <security-role>
+        <description>Read-only access (server.xml reader-role)</description>
+        <role-name>Reader</role-name>
+    </security-role>
+
+    <login-config>
+        <auth-method>FORM</auth-method>
+        <realm-name>Liberty Admin Console</realm-name>
+        <form-login-config>
+            <form-login-page>/login.html</form-login-page>
+            <form-error-page>/login-error.html</form-error-page>
+        </form-login-config>
+    </login-config>
+
+</web-app>

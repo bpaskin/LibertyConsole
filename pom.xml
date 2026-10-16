@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.ibm.liberty.admin</groupId>
+    <artifactId>console-parent</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <name>Liberty Admin Console Feature (parent)</name>
+    <description>
+        The Liberty Admin Console packaged as a Liberty user feature (usr:console-1.0).
+        The console is an OSGi Web Application Bundle (WAB) that is secured by the
+        server's administrator-role and reader-role.
+    </description>
+
+    <modules>
+        <module>console-bundle</module>
+        <module>console-feature</module>
+    </modules>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.release>17</maven.compiler.release>
+
+        <!-- Feature identity -->
+        <feature.shortName>console-1.0</feature.shortName>
+        <feature.symbolicName>com.ibm.liberty.admin.console-1.0</feature.symbolicName>
+        <feature.version>1.0.0</feature.version>
+        <bundle.symbolicName>com.ibm.liberty.admin.console</bundle.symbolicName>
+
+        <!-- Compile-time APIs (all provided by the Liberty runtime) -->
+        <version.jakarta.servlet>5.0.0</version.jakarta.servlet>
+        <version.osgi.framework>1.8.0</version.osgi.framework>
+        <version.osgi.ds.annotations>1.5.1</version.osgi.ds.annotations>
+        <version.liberty.spi.wab>1.0.110</version.liberty.spi.wab>
+
+        <!-- Test -->
+        <version.junit>5.10.2</version.junit>
+
+        <!-- Plugins -->
+        <version.plugin.bnd>7.0.0</version.plugin.bnd>
+        <version.plugin.clean>3.5.0</version.plugin.clean>
+        <version.plugin.resources>3.3.1</version.plugin.resources>
+        <version.plugin.compiler>3.13.0</version.plugin.compiler>
+        <version.plugin.surefire>3.5.2</version.plugin.surefire>
+        <version.plugin.jar>3.4.2</version.plugin.jar>
+        <version.plugin.install>3.1.2</version.plugin.install>
+        <version.plugin.deploy>3.1.2</version.plugin.deploy>
+        <version.plugin.antrun>3.1.0</version.plugin.antrun>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>jakarta.servlet</groupId>
+                <artifactId>jakarta.servlet-api</artifactId>
+                <version>${version.jakarta.servlet}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.osgi</groupId>
+                <artifactId>org.osgi.framework</artifactId>
+                <version>${version.osgi.framework}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.osgi</groupId>
+                <artifactId>org.osgi.service.component.annotations</artifactId>
+                <version>${version.osgi.ds.annotations}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.ibm.websphere.appserver.spi</groupId>
+                <artifactId>com.ibm.websphere.appserver.spi.wab.configure</artifactId>
+                <version>${version.liberty.spi.wab}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${version.junit}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>${version.plugin.clean}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>${version.plugin.resources}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${version.plugin.compiler}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${version.plugin.surefire}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${version.plugin.jar}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>${version.plugin.install}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>${version.plugin.deploy}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <version>${version.plugin.antrun}</version>
+                </plugin>
+                <plugin>
+                    <groupId>biz.aQute.bnd</groupId>
+                    <artifactId>bnd-maven-plugin</artifactId>
+                    <version>${version.plugin.bnd}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

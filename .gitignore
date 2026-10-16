@@ -1,0 +1,61 @@
+# --- Maven build output ------------------------------------------------------
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.flattened-pom.xml
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# --- Built archives (recreate with: mvn package) -----------------------------
+*.jar
+*.war
+*.ear
+*.esa
+*.zip
+*.tar.gz
+
+# ...except the prebuilt feature kept in dist/ on purpose
+!dist/console-1.0.esa
+!dist/console-1.0-usr-extension.zip
+
+# --- Local Liberty runtimes and test servers ---------------------------------
+wlp/
+test-server/
+.libertyls/
+logs/
+*.log
+# backups the console writes next to configuration files it edits
+*.backup.*
+
+# --- IDEs ---------------------------------------------------------------------
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+.apt_generated/
+.metadata/
+nbproject/
+bin/
+
+# --- Python (scripts/smoke-test.py) -------------------------------------------
+__pycache__/
+*.pyc
+
+# --- OS and editor leftovers -------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.bak
+*.swp
+*~

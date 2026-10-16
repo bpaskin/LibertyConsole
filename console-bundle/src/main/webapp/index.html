@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liberty Admin Console</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="websphere-liberty-logo.png" alt="WebSphere Liberty" width="80" height="56">
+                <h1>Liberty Admin</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#server" class="nav-item" data-page="server">
+                    <i class="fas fa-server"></i>
+                    <span>Server</span>
+                </a>
+                <a href="#applications" class="nav-item" data-page="applications">
+                    <i class="fas fa-cube"></i>
+                    <span>Applications</span>
+                </a>
+                <a href="#resources" class="nav-item" data-page="resources">
+                    <i class="fas fa-database"></i>
+                    <span>Resources</span>
+                </a>
+                <a href="#monitoring" class="nav-item" data-page="monitoring">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Monitoring</span>
+                </a>
+                <a href="#logs" class="nav-item" data-page="logs">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Logs</span>
+                </a>
+                <a href="#configuration" class="nav-item" data-page="configuration">
+                    <i class="fas fa-cog"></i>
+                    <span>Configuration</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="username"></span>
+                </div>
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="breadcrumb">
+                    <span id="current-page">Dashboard</span>
+                </div>
+                <div class="top-bar-actions">
+                    <button class="btn-icon" onclick="refreshData()" title="Refresh">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="btn-icon" onclick="toggleTheme()" title="Toggle Theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <!-- Dashboard Page -->
+                <div id="page-dashboard" class="page active">
+                    <div class="page-header">
+                        <h2>Dashboard</h2>
+                        <p>Overview of your Liberty server</p>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <i class="fas fa-server"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="server-status">STARTED</h3>
+                                <p>Server Status</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <i class="fas fa-cube"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="app-count">0</h3>
+                                <p>Applications</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon orange">
+                                <i class="fas fa-memory"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="memory-usage">0%</h3>
+                                <p>Memory Usage</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon purple">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="uptime">0h 0m</h3>
+                                <p>Uptime</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Server Information</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="info-grid" id="server-info">
+                                    <div class="info-item">
+                                        <span class="info-label">Server Name:</span>
+                                        <span class="info-value">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Memory Usage</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="memory-progress" style="width: 0%"></div>
+                                </div>
+                                <div class="memory-details" id="memory-details">
+                                    <p>Loading...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Server Page -->
+                <div id="page-server" class="page">
+                    <div class="page-header">
+                        <h2>Server Management</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-primary" onclick="performGC()">
+                                <i class="fas fa-trash"></i> Run GC
+                            </button>
+                            <button class="btn btn-secondary" onclick="getThreadDump()">
+                                <i class="fas fa-list"></i> Thread Dump
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Server Details</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-grid" id="server-details">
+                                <p>Loading server information...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Applications Page -->
+                <div id="page-applications" class="page">
+                    <div class="page-header">
+                        <h2>Applications</h2>
+                        <button class="btn btn-primary" onclick="showDeployDialog()">
+                            <i class="fas fa-plus"></i> Deploy Application
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <table class="data-table" id="applications-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Context Root</th>
+                                        <th>State</th>
+                                        <th>Type</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="5" class="text-center">Loading applications...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resources Page -->
+                <div id="page-resources" class="page">
+                    <div class="page-header">
+                        <h2>Resources</h2>
+                        <p>Manage JDBC DataSources, JMS resources, and more</p>
+                    </div>
+
+                    <!-- JDBC DataSources -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-database"></i> JDBC DataSources</h3>
+                        </div>
+                        <div class="card-body" id="datasources-container">
+                            <p class="text-muted">Loading datasources...</p>
+                        </div>
+                    </div>
+
+                    <!-- JMS Connection Factories -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-plug"></i> JMS Connection Factories</h3>
+                        </div>
+                        <div class="card-body" id="jms-factories-container">
+                            <p class="text-muted">Loading JMS connection factories...</p>
+                        </div>
+                    </div>
+
+                    <!-- JMS Queues -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-list"></i> JMS Queues</h3>
+                        </div>
+                        <div class="card-body" id="jms-queues-container">
+                            <p class="text-muted">Loading JMS queues...</p>
+                        </div>
+                    </div>
+
+                    <!-- JMS Topics -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-broadcast-tower"></i> JMS Topics</h3>
+                        </div>
+                        <div class="card-body" id="jms-topics-container">
+                            <p class="text-muted">Loading JMS topics...</p>
+                        </div>
+                    </div>
+
+                    <!-- Thread Pools -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-layer-group"></i> Thread Pools</h3>
+                        </div>
+                        <div class="card-body" id="thread-pools-container">
+                            <p class="text-muted">Loading thread pools...</p>
+                        </div>
+                    </div>
+
+                    <!-- Connection Managers -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-network-wired"></i> Connection Managers</h3>
+                        </div>
+                        <div class="card-body" id="connection-managers-container">
+                            <p class="text-muted">Loading connection managers...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monitoring Page -->
+                <div id="page-monitoring" class="page">
+                    <div class="page-header">
+                        <h2>Monitoring</h2>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" id="auto-refresh-metrics" onchange="toggleMetricsAutoRefresh()">
+                            <label for="auto-refresh-metrics" style="margin: 0; cursor: pointer;">Auto-refresh (10s)</label>
+                        </div>
+                    </div>
+
+                    <!-- Charts Section -->
+                    <div class="charts-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-memory"></i> Memory Usage</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="memoryChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-microchip"></i> CPU Usage</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="cpuChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-layer-group"></i> Thread Count</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="threadChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-recycle"></i> Garbage Collection</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="gcChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Metric Charts -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-area"></i> Custom Metric Charts</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="dynamic-metric-selector">
+                                <label for="dynamic-metric-select">Select detailed metric</label>
+                                <select id="dynamic-metric-select" class="form-control">
+                                    <option value="">Choose a metric...</option>
+                                </select>
+                            </div>
+                            <div style="margin-top: 1rem;">
+                                <button class="btn btn-primary" onclick="addSelectedMetricChart()">
+                                    <i class="fas fa-plus"></i> Add Chart
+                                </button>
+                            </div>
+                            <div id="dynamic-charts-container" class="dynamic-charts-grid">
+                                <p class="text-muted">Select metrics from Detailed Metrics to create charts.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Application Metrics -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-bar"></i> Application Metrics</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="app-metrics-debug" class="text-muted" style="margin-bottom: 0.75rem; font-size: 0.875rem;"></div>
+                            <table class="data-table" id="app-metrics-table">
+                                <thead>
+                                    <tr>
+                                        <th>Application</th>
+                                        <th>Status</th>
+                                        <th>Request Count</th>
+                                        <th>Avg Response Time</th>
+                                        <th>Active Requests</th>
+                                        <th>Error Count</th>
+                                        <th>Request Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="app-metrics-tbody">
+                                    <tr>
+                                        <td colspan="7" class="text-center">Loading application metrics...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Metrics Details -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Detailed Metrics</h3>
+                        </div>
+                        <div class="card-body" id="metrics-details">
+                            <p class="text-muted">Loading metrics...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logs Page -->
+                <div id="page-logs" class="page">
+                    <div class="page-header">
+                        <h2>Server Logs</h2>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="log-viewer">
+                                <pre id="log-content">Loading logs...</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuration Page -->
+                <div id="page-configuration" class="page">
+                    <div class="page-header">
+                        <h2>Configuration Editor</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-secondary" onclick="loadConfiguration()">
+                                <i class="fas fa-sync-alt"></i> Reload
+                            </button>
+                            <button class="btn btn-primary" onclick="saveConfiguration()">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-file-code"></i> Configuration File</h3>
+                            <div style="margin-top: 0.5rem;">
+                                <label for="config-file-selector" style="font-weight: normal; margin-right: 0.5rem;">Select file:</label>
+                                <select id="config-file-selector" onchange="loadSelectedConfigFile()" style="padding: 0.25rem 0.5rem; border: 1px solid #ddd; border-radius: 4px; min-width: 300px;">
+                                    <option value="">Loading files...</option>
+                                </select>
+                                <span id="config-file-path" class="text-muted" style="font-size: 0.875rem; margin-left: 1rem;"></span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info" style="margin-bottom: 1rem;">
+                                <p><strong><i class="fas fa-info-circle"></i> Important:</strong></p>
+                                <p>• A backup is automatically created before saving</p>
+                                <p>• Server restart may be required for changes to take effect</p>
+                                <p>• Invalid XML will be rejected for XML files</p>
+                            </div>
+                            <div class="editor-container">
+                                <textarea id="config-editor" class="config-editor" spellcheck="false"></textarea>
+                            </div>
+                            <div class="editor-footer">
+                                <span id="editor-status" class="text-muted"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for Deploy Application -->
+    <div id="deploy-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Deploy Application</h3>
+                <button class="modal-close" onclick="closeDeployDialog()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="deploy-form" onsubmit="deployApplication(event)">
+                    <div class="form-group">
+                        <label for="app-name">Application Name</label>
+                        <input type="text" id="app-name" placeholder="Optional when uploading a file">
+                    </div>
+                    <div class="form-group">
+                        <label for="context-root">Context Root</label>
+                        <input type="text" id="context-root" placeholder="Defaults to /application-name">
+                    </div>
+                    <div class="form-group">
+                        <label for="app-file">Application File</label>
+                        <input type="file" id="app-file" accept=".war,.ear,.jar" required>
+                        <small class="text-muted">Upload a WAR, EAR, or JAR file. Application type is detected from the file extension.</small>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeDeployDialog()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Deploy</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
