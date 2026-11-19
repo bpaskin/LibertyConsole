@@ -8,8 +8,11 @@ Subsystem-Name: Liberty Admin Console
 Subsystem-Description: A web console for monitoring and administering a Liberty server: server and JVM details, applications (start, stop, upload, remove), logs, server configuration files and metrics. Users in <administrator-role> have full access; users in <reader-role> have read-only access.
 Subsystem-Vendor: IBM
 Subsystem-License: https://www.apache.org/licenses/LICENSE-2.0
-Subsystem-Content: ${bundle.symbolicName}; version="[1.0.0,2.0.0)",
- com.ibm.websphere.appserver.servlet-6.0; ibm.tolerates:="5.0,6.1"; type="osgi.subsystem.feature",
+Subsystem-Content: ${bundle.symbolicName}_${project.version}.jar; type=file; location:="lib/",
+ ${bundle.symbolicName}.javax_${project.version}.jar; type=file; location:="lib/",
+ ${feature.symbolicName}.javax.mf; type=file; location:="lib/features/",
+ ${feature.symbolicName}.jakarta.mf; type=file; location:="lib/features/",
+ com.ibm.websphere.appserver.servlet-6.0; ibm.tolerates:="3.0,3.1,4.0,5.0,6.1"; type="osgi.subsystem.feature",
  com.ibm.wsspi.appserver.webBundle-1.0; type="osgi.subsystem.feature",
  com.ibm.wsspi.appserver.webBundleSecurity-1.0; type="osgi.subsystem.feature",
  com.ibm.websphere.appserver.restHandler-1.0; type="osgi.subsystem.feature",

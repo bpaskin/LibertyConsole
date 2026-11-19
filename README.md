@@ -11,7 +11,7 @@ feature**. Install the feature, add it to `server.xml`, and the console comes up
 ```
 
 It has a dashboard, server and JVM details, application management (start, stop, upload,
-remove), resources, monitoring, logs and a configuration editor. The console is an OSGi
+remove), resources, batch jobs, monitoring, logs and a configuration editor. The console is an OSGi
 **Web Application Bundle (WAB)** inside the feature, built the same way as Liberty's own Admin Center:
 
 * Users sign in with the server's `<administrator-role>` (full access) and `<reader-role>` (read-only).
@@ -80,9 +80,11 @@ The rest of this file covers each step in detail.
 
 ## Requirements
 
-* Open Liberty or WebSphere Liberty with Jakarta EE 9.1, 10 or 11 features
-  (`servlet-5.0`, `servlet-6.0` or `servlet-6.1`). Servers on Java EE 8 or older features
-  (`servlet-4.0`, `javaee-8.0`, ...) are not supported, and Liberty reports a feature conflict.
+* Open Liberty or WebSphere Liberty with Servlet 3.0 through 6.1
+  (`servlet-3.0`, `servlet-3.1`, `servlet-4.0`, `servlet-5.0`, `servlet-6.0` or `servlet-6.1`).
+  The console selects the Java EE (`javax.servlet`) or Jakarta EE (`jakarta.servlet`)
+  adapter automatically. Servlet 3.0 is available in WebSphere Liberty; Open Liberty starts at 3.1.
+  With no servlet feature already selected, the console enables Servlet 6.0.
 * Java 17 or later to run the server
 * Maven 3.8+ and JDK 17+ to build
 
@@ -90,6 +92,13 @@ Tested on Open Liberty 26.0.0.9 (Java 21): installed with featureUtility, the zi
 `servlet-5.0`, `servlet-6.0`, `servlet-6.1`, `appSecurity-5.0` + `restfulWS-3.1` + `cdi-4.0`,
 and `jakartaee-10.0` + `adminCenter-1.0`.
 WebSphere Liberty has the same SPIs but wasn't part of that testing.
+
+The Servlet compatibility update was also tested on Open Liberty 26.0.0.9 (Java 21)
+with `servlet-3.1`, `servlet-4.0`, `servlet-5.0`, `servlet-6.0`, `servlet-6.1`,
+and the default configuration. Checks cover login, read-only APIs, reader-role restrictions,
+application uploads, and loading exactly one console WAB. The Java EE adapter and its tests
+compile against the Servlet 3.0 API; running on WebSphere Liberty with `servlet-3.0`
+remains to be verified.
 
 ## Build
 
@@ -101,7 +110,8 @@ mvn clean package
 |---|---|
 | `console-feature/target/console-1.0.esa` | Feature archive for `featureUtility` / `installUtility` |
 | `console-feature/target/console-1.0-usr-extension.zip` | The same feature as files under `wlp/usr/extension/` |
-| `console-bundle/target/com.ibm.liberty.admin.console_1.0.0.jar` | The WAB |
+| `console-bundle/target/com.ibm.liberty.admin.console_1.0.0.jar` | Jakarta WAB (Servlet 5.0–6.1) |
+| `console-bundle-javax/target/com.ibm.liberty.admin.console.javax_1.0.0.jar` | Java EE WAB (Servlet 3.0–4.0) |
 
 `mvn install` also puts the ESA in your local Maven repository
 (`com.ibm.liberty.admin:console-feature:1.0.0:esa`).
@@ -111,11 +121,14 @@ building first. Rebuild and replace them when you change the code.
 
 ## Install
 
-Use **one** of these. They all install the same two files:
+Use **one** of these. They all install the same five files:
 
 ```
 wlp/usr/extension/lib/com.ibm.liberty.admin.console_1.0.0.jar
+wlp/usr/extension/lib/com.ibm.liberty.admin.console.javax_1.0.0.jar
 wlp/usr/extension/lib/features/com.ibm.liberty.admin.console-1.0.mf
+wlp/usr/extension/lib/features/com.ibm.liberty.admin.console-1.0.javax.mf
+wlp/usr/extension/lib/features/com.ibm.liberty.admin.console-1.0.jakarta.mf
 ```
 
 **featureUtility** (Open Liberty and WebSphere Liberty):
@@ -139,7 +152,9 @@ unzip console-feature/target/console-1.0-usr-extension.zip -d /opt/ibm      # gi
 scripts/install-feature.sh /opt/ibm/wlp
 ```
 
-To uninstall, stop the server and delete the two files.
+To uninstall, stop the server and delete the five files. When upgrading with
+`featureUtility`, remove the previous console files first: it does not reinstall an
+already installed feature with the same version. The script and zip replace them directly.
 
 ## Configure
 
@@ -200,6 +215,23 @@ Enable MicroProfile Metrics to fill the Monitoring page:
 
 Without either feature, everything else works: the Monitoring page explains that MicroProfile
 Metrics isn't enabled, and the table shows zeros.
+
+### Batch (optional)
+
+**Batch functionality requires Servlet 3.1 or later and is not available with Servlet 3.0.**
+
+The **Batch** page and the **Batch Jobs** card on the dashboard are always shown. Enable
+Jakarta Batch and its management REST API to fill them with job instances (status, application,
+submitter, last update) and the executions and steps of each one:
+
+```xml
+<feature>batch-2.1</feature>
+<feature>batchManagement-1.0</feature>
+```
+
+The browser reads `/ibm/api/batch/jobinstances` with your console sign-in (tested with an
+`<administrator-role>` user). Without the features the page and the card say that batch
+management isn't enabled. The page asks for up to 200 job instances.
 
 ## Roles
 
@@ -287,8 +319,11 @@ console-bundle/                      the Web Application Bundle
     web/                             REST API servlets (/api/server, /api/applications, ..., /api/user)
   src/main/resources/OSGI-INF/       metatype for <usr_console>
   src/main/webapp/                   UI (index.html, js, css) and WEB-INF/web.xml
+console-bundle-javax/                generates the Java EE WAB and tests from console-bundle sources
+  bnd.bnd                            Servlet 3.0–4.0 imports (Liberty OSGi package versions 2.6–2.8)
 console-feature/
-  src/main/feature/console-1.0.mf    feature manifest (Subsystem-Content = bundle + required features)
+  src/main/feature/console-1.0.mf    public feature, servlet toleration and packaged adapter files
+  src/main/feature/console-1.0.*.mf private auto-features selecting the Java EE or Jakarta WAB
   pom.xml                            builds the ESA and the usr-extension zip
 dist/                                prebuilt console-1.0.esa and console-1.0-usr-extension.zip
 docs/images/                         screenshots used in this README
@@ -300,13 +335,19 @@ scripts/smoke-test.py                read-only checks against a running server
 ## How it works
 
 * **Feature manifest**: `console-1.0.mf` defines `usr:console-1.0` (`IBM-ShortName`). Its content is the
-  bundle and these features:
-  * `com.ibm.websphere.appserver.servlet-6.0`, which also accepts 5.0 and 6.1
+  adapter files and these features:
+  * `com.ibm.websphere.appserver.servlet-6.0`, which also accepts 3.0, 3.1, 4.0, 5.0 and 6.1
   * `com.ibm.wsspi.appserver.webBundle-1.0` and `webBundleSecurity-1.0`, the SPI features for WABs
     in product extensions
   * `com.ibm.websphere.appserver.restHandler-1.0`, which turns on the management security the WAB is authorized against
   * `transportSecurity-1.0`, for HTTPS
-* **WAB**: the bundle has `Web-ContextPath: @libertyAdminConsole`. The `@` means the path is
+* **Servlet adapters**: private auto-features use `IBM-Provision-Capability` to load only the
+  WAB for the selected servlet namespace: Java EE for 3.0/3.1/4.0, Jakarta for 5.0/6.0/6.1.
+  The build generates Java EE sources and a Servlet 3.0 deployment descriptor from the Jakarta
+  sources, so both adapters share the same implementation and test suite. Uploads read the
+  `Content-Disposition` header through Servlet 3.0 APIs. The public feature packages both
+  bundles and the auto-feature manifests as file resources so the ESA installs everything.
+* **WAB**: the active bundle has `Web-ContextPath: @libertyAdminConsole`. The `@` means the path is
   configurable. `ConsoleConfiguration` is a DS component bound to the `<usr_console>` configuration.
   It registers a `WABConfiguration` service that tells Liberty the actual path. Liberty serves the
   web content (`index.html`, `js/`, `css/`, `WEB-INF/web.xml`) from the bundle.
@@ -329,10 +370,11 @@ scripts/smoke-test.py                read-only checks against a running server
 | Symptom | Cause / fix |
 |---|---|
 | `CWWKF0001E: A feature definition could not be found for usr:console-1.0` | Not installed, or installed under a different `WLP_USER_DIR`. Check `usr/extension/lib/features/`. |
-| `CWWKF0033E: The singleton features servlet-4.0 and servlet-6.0 cannot be loaded at the same time` | The server uses Java EE 8 features. The console needs Jakarta EE 9.1 or later. |
+| A servlet singleton conflict, or no console on a Java EE server | Rebuild and reinstall the complete feature, including both WABs and all three feature manifests. Older console packages only supported Servlet 5.0–6.1. |
 | Login page keeps coming back, or 403 after signing in | The user isn't in `<administrator-role>` or `<reader-role>`. |
 | `https://...:9443` doesn't answer | There's no HTTPS port: set `httpsPort` and a keystore (see above). |
 | Monitoring page says MicroProfile Metrics is not enabled | Add `mpMetrics-5.1`. The per-application table only needs `monitor-1.0`. |
+| Batch page says batch management is not enabled | Add `batch-2.1` and `batchManagement-1.0`. |
 | Monitoring page says `/metrics` refused your sign-in | The user isn't in `<administrator-role>` or `<reader-role>`, or the session expired: sign in again. |
 | Icons or charts missing | The UI loads Font Awesome and Chart.js from public CDNs (cdnjs, jsdelivr). The browser needs internet access. |
 

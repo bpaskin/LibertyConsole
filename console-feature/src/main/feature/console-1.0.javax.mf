@@ -1,0 +1,10 @@
+Subsystem-ManifestVersion: 1
+IBM-Feature-Version: 2
+Subsystem-Type: osgi.subsystem.feature
+Subsystem-SymbolicName: ${feature.symbolicName}.javax; visibility:=private; singleton:=true
+Subsystem-Version: ${feature.version}
+Subsystem-Name: Liberty Admin Console (javax)
+Subsystem-Vendor: IBM
+IBM-Provision-Capability: osgi.identity; filter:="(&(type=osgi.subsystem.feature)(osgi.identity=${feature.symbolicName}))",
+ osgi.identity; filter:="(&(type=osgi.subsystem.feature)(|(osgi.identity=com.ibm.websphere.appserver.servlet-3.0)(osgi.identity=com.ibm.websphere.appserver.servlet-3.1)(osgi.identity=com.ibm.websphere.appserver.servlet-4.0)))"
+Subsystem-Content: ${bundle.symbolicName}.javax; version="[1.0.0,2.0.0)"

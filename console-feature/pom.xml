@@ -26,6 +26,11 @@
             <artifactId>console-bundle</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.ibm.liberty.admin</groupId>
+            <artifactId>console-bundle-javax</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -77,11 +82,20 @@
                                     <mapper type="merge" to="${bundle.jar}"/>
                                 </copy>
 
+                                <copy todir="${stage}/bundles" overwrite="true">
+                                    <fileset refid="deps.com.ibm.liberty.admin:console-bundle-javax:jar"/>
+                                    <mapper type="merge" to="${bundle.symbolicName}.javax_${project.version}.jar"/>
+                                </copy>
+
                                 <!-- 1. ESA: OSGI-INF/SUBSYSTEM.MF + bundle -->
                                 <zip destfile="${project.build.directory}/${feature.shortName}.esa">
                                     <zipfileset file="${project.build.directory}/feature/${feature.shortName}.mf"
                                                 fullpath="OSGI-INF/SUBSYSTEM.MF"/>
-                                    <zipfileset file="${stage}/bundles/${bundle.jar}"/>
+                                    <zipfileset dir="${stage}/bundles" includes="*.jar" prefix="wlp/lib"/>
+                                    <zipfileset file="${project.build.directory}/feature/${feature.shortName}.javax.mf"
+                                                fullpath="wlp/lib/features/${feature.symbolicName}.javax.mf"/>
+                                    <zipfileset file="${project.build.directory}/feature/${feature.shortName}.jakarta.mf"
+                                                fullpath="wlp/lib/features/${feature.symbolicName}.jakarta.mf"/>
                                 </zip>
 
                                 <!-- 2. Zip to extract into the directory that contains wlp/ -->
@@ -89,7 +103,11 @@
                                     <!-- Same file name featureUtility uses, so both install methods end up identical -->
                                     <zipfileset file="${project.build.directory}/feature/${feature.shortName}.mf"
                                                 fullpath="wlp/usr/extension/lib/features/${feature.symbolicName}.mf"/>
-                                    <zipfileset file="${stage}/bundles/${bundle.jar}"
+                                    <zipfileset file="${project.build.directory}/feature/${feature.shortName}.javax.mf"
+                                                fullpath="wlp/usr/extension/lib/features/${feature.symbolicName}.javax.mf"/>
+                                    <zipfileset file="${project.build.directory}/feature/${feature.shortName}.jakarta.mf"
+                                                fullpath="wlp/usr/extension/lib/features/${feature.symbolicName}.jakarta.mf"/>
+                                    <zipfileset dir="${stage}/bundles" includes="*.jar"
                                                 prefix="wlp/usr/extension/lib"/>
                                 </zip>
 

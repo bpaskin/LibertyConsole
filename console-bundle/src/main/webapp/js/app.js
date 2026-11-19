@@ -252,6 +252,9 @@ function loadPageData(page) {
         case 'logs':
             loadLogs();
             break;
+        case 'batch':
+            loadBatch();
+            break;
         case 'monitoring':
             loadMetrics();
             break;
@@ -272,6 +275,9 @@ async function loadDashboardData() {
         // Load applications
         const applications = await fetchAPI('/applications');
         document.getElementById('app-count').textContent = applications.length;
+        
+        // Batch information is always shown; it never raises an error alert
+        loadBatchSummary();
         
     } catch (error) {
         console.error('Error loading dashboard data:', error);
@@ -1084,6 +1090,190 @@ function parseConnectionManagersFromConfig(config) {
     return connManagers;
 }
 
+
+// Batch (Jakarta Batch job instances)
+// The data comes from Liberty's batch management REST API (batchManagement-1.0),
+// which accepts the console sign-in, the same way /metrics does. The Batch page
+// and the dashboard card are always shown; when the API isn't there they say how
+// to enable it.
+const BATCH_API = '/ibm/api/batch';
+const BATCH_RUNNING = ['STARTING', 'STARTED', 'STOPPING'];
+const BATCH_NOT_COMPLETED = ['FAILED', 'STOPPED', 'ABANDONED'];
+
+async function fetchBatchInstances() {
+    let response;
+    try {
+        response = await fetch(`${BATCH_API}/jobinstances?page=0&pageSize=200`, {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin'
+        });
+    } catch (error) {
+        return { instances: null, message: `Batch information could not be read: ${error.message}` };
+    }
+    if (response.status === 404) {
+        return { instances: null, message: 'Batch management is not enabled. Add batchManagement-1.0 and batch-2.1 to the featureManager in server.xml.' };
+    }
+    if (response.status === 401 || response.status === 403) {
+        return { instances: null, message: 'The batch management API refused your sign-in. Your user needs to be in the administrator-role or reader-role in server.xml.' };
+    }
+    if (!response.ok) {
+        return { instances: null, message: `The batch management API answered with HTTP ${response.status}.` };
+    }
+    try {
+        const instances = await response.json();
+        if (Array.isArray(instances)) {
+            return { instances: instances.sort((a, b) => b.instanceId - a.instanceId), message: null };
+        }
+    } catch (error) {
+        // falls through to the message below
+    }
+    return { instances: null, message: 'The batch management API returned an unexpected response.' };
+}
+
+function countBatchInstances(instances) {
+    return {
+        total: instances.length,
+        running: instances.filter(i => BATCH_RUNNING.includes(i.batchStatus)).length,
+        completed: instances.filter(i => i.batchStatus === 'COMPLETED').length,
+        failed: instances.filter(i => BATCH_NOT_COMPLETED.includes(i.batchStatus)).length
+    };
+}
+
+async function loadBatchSummary() {
+    const { instances } = await fetchBatchInstances();
+    const count = document.getElementById('batch-count');
+    const label = document.getElementById('batch-count-label');
+    if (instances === null) {
+        count.textContent = 'N/A';
+        label.textContent = 'Batch Jobs (not enabled)';
+        return;
+    }
+    const counts = countBatchInstances(instances);
+    count.textContent = counts.total;
+    label.textContent = `Batch Jobs (${counts.running} running, ${counts.failed} failed)`;
+}
+
+function batchCell(row, text) {
+    const td = document.createElement('td');
+    td.textContent = text === undefined || text === null || text === '' ? '-' : text;
+    row.appendChild(td);
+    return td;
+}
+
+function batchStatusBadge(status) {
+    const badge = document.createElement('span');
+    let cls = 'badge-warning';
+    if (status === 'COMPLETED') cls = 'badge-success';
+    else if (BATCH_NOT_COMPLETED.includes(status)) cls = 'badge-danger';
+    badge.className = `badge ${cls}`;
+    badge.textContent = status || '-';
+    return badge;
+}
+
+async function loadBatch() {
+    const notice = document.getElementById('batch-notice');
+    const tbody = document.getElementById('batch-tbody');
+    notice.replaceChildren();
+    
+    const { instances, message } = await fetchBatchInstances();
+    
+    ['total', 'running', 'completed', 'failed'].forEach(key => {
+        document.getElementById(`batch-${key}`).textContent = '-';
+    });
+    tbody.replaceChildren();
+    
+    const emptyRow = (text) => {
+        const row = document.createElement('tr');
+        const td = batchCell(row, text);
+        td.colSpan = 7;
+        td.className = 'text-center';
+        tbody.appendChild(row);
+    };
+    
+    if (instances === null) {
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-warning';
+        const p = document.createElement('p');
+        p.textContent = message;
+        alert.appendChild(p);
+        notice.appendChild(alert);
+        emptyRow('No batch information available');
+        return;
+    }
+    
+    const counts = countBatchInstances(instances);
+    document.getElementById('batch-total').textContent = counts.total;
+    document.getElementById('batch-running').textContent = counts.running;
+    document.getElementById('batch-completed').textContent = counts.completed;
+    document.getElementById('batch-failed').textContent = counts.failed;
+    
+    if (instances.length === 0) {
+        emptyRow('No batch jobs have been submitted');
+        return;
+    }
+    
+    instances.forEach(instance => {
+        const row = document.createElement('tr');
+        batchCell(row, instance.instanceId);
+        batchCell(row, instance.jobName);
+        batchCell(row, instance.appName);
+        batchCell(row, '').replaceChildren(batchStatusBadge(instance.batchStatus));
+        batchCell(row, instance.submitter);
+        batchCell(row, instance.lastUpdatedTime);
+        const button = document.createElement('button');
+        button.className = 'btn btn-sm btn-secondary';
+        button.textContent = 'Executions';
+        button.addEventListener('click', () => toggleBatchExecutions(instance.instanceId, row));
+        batchCell(row, '').replaceChildren(button);
+        tbody.appendChild(row);
+    });
+}
+
+// Shows or hides the executions (with their steps) of one job instance under its row
+async function toggleBatchExecutions(instanceId, row) {
+    const existing = row.nextElementSibling;
+    if (existing && existing.classList.contains('batch-executions')) {
+        existing.remove();
+        return;
+    }
+    
+    const detailRow = document.createElement('tr');
+    detailRow.className = 'batch-executions';
+    const cell = batchCell(detailRow, 'Loading executions...');
+    cell.colSpan = 7;
+    row.after(detailRow);
+    
+    try {
+        const response = await fetch(`${BATCH_API}/jobinstances/${encodeURIComponent(instanceId)}/jobexecutions`, {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin'
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const executions = await response.json();
+        if (!Array.isArray(executions) || executions.length === 0) {
+            cell.textContent = 'This job instance has no executions yet.';
+            return;
+        }
+        const lines = executions.map(execution => {
+            const steps = (execution.stepExecutions || [])
+                .map(step => `${step.stepName}: ${step.batchStatus}${step.exitStatus ? ' (' + step.exitStatus + ')' : ''}`)
+                .join(', ');
+            return `Execution ${execution.executionId}: ${execution.batchStatus}`
+                + ` (exit ${execution.exitStatus || '-'}),`
+                + ` started ${execution.startTime || '-'}, ended ${execution.endTime || '-'}`
+                + (steps ? `. Steps - ${steps}` : '');
+        });
+        cell.replaceChildren(...lines.map(line => {
+            const div = document.createElement('div');
+            div.textContent = line;
+            return div;
+        }));
+    } catch (error) {
+        cell.textContent = `Could not load executions: ${error.message}`;
+    }
+}
 
 // Server operations
 async function performGC() {

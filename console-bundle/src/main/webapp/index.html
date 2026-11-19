@@ -33,6 +33,10 @@
                     <i class="fas fa-database"></i>
                     <span>Resources</span>
                 </a>
+                <a href="#batch" class="nav-item" data-page="batch">
+                    <i class="fas fa-tasks"></i>
+                    <span>Batch</span>
+                </a>
                 <a href="#monitoring" class="nav-item" data-page="monitoring">
                     <i class="fas fa-chart-line"></i>
                     <span>Monitoring</span>
@@ -117,6 +121,15 @@
                             <div class="stat-content">
                                 <h3 id="uptime">0h 0m</h3>
                                 <p>Uptime</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="batch-count">-</h3>
+                                <p id="batch-count-label">Batch Jobs</p>
                             </div>
                         </div>
                     </div>
@@ -273,6 +286,73 @@
                         </div>
                         <div class="card-body" id="connection-managers-container">
                             <p class="text-muted">Loading connection managers...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Batch Page -->
+                <div id="page-batch" class="page">
+                    <div class="page-header">
+                        <h2>Batch</h2>
+                        <p>Jakarta Batch job instances on this server</p>
+                    </div>
+
+                    <div id="batch-notice"></div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon blue"><i class="fas fa-tasks"></i></div>
+                            <div class="stat-content">
+                                <h3 id="batch-total">-</h3>
+                                <p>Job Instances</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon orange"><i class="fas fa-spinner"></i></div>
+                            <div class="stat-content">
+                                <h3 id="batch-running">-</h3>
+                                <p>Running</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+                            <div class="stat-content">
+                                <h3 id="batch-completed">-</h3>
+                                <p>Completed</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon purple"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="stat-content">
+                                <h3 id="batch-failed">-</h3>
+                                <p>Failed / Stopped</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-tasks"></i> Job Instances</h3>
+                        </div>
+                        <div class="card-body">
+                            <table class="data-table" id="batch-table">
+                                <thead>
+                                    <tr>
+                                        <th>Instance</th>
+                                        <th>Job Name</th>
+                                        <th>Application</th>
+                                        <th>Status</th>
+                                        <th>Submitter</th>
+                                        <th>Last Updated</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="batch-tbody">
+                                    <tr>
+                                        <td colspan="7" class="text-center">Loading batch jobs...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

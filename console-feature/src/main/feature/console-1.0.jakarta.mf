@@ -1,0 +1,10 @@
+Subsystem-ManifestVersion: 1
+IBM-Feature-Version: 2
+Subsystem-Type: osgi.subsystem.feature
+Subsystem-SymbolicName: ${feature.symbolicName}.jakarta; visibility:=private; singleton:=true
+Subsystem-Version: ${feature.version}
+Subsystem-Name: Liberty Admin Console (jakarta)
+Subsystem-Vendor: IBM
+IBM-Provision-Capability: osgi.identity; filter:="(&(type=osgi.subsystem.feature)(osgi.identity=${feature.symbolicName}))",
+ osgi.identity; filter:="(&(type=osgi.subsystem.feature)(|(osgi.identity=com.ibm.websphere.appserver.servlet-5.0)(osgi.identity=com.ibm.websphere.appserver.servlet-6.0)(osgi.identity=com.ibm.websphere.appserver.servlet-6.1)))"
+Subsystem-Content: ${bundle.symbolicName}; version="[1.0.0,2.0.0)"

@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * /api/applications - list, start, stop, restart, deploy and remove applications.
@@ -29,6 +31,9 @@ import java.util.List;
 public class ApplicationsApiServlet extends ApiServlet {
 
     private static final long serialVersionUID = 1L;
+
+    private static final Pattern DISPOSITION_PARAMETER = Pattern.compile(
+        "(?:^|;)\\s*([^=;\\s]+)\\s*=\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|[^;]*)");
 
     private ApplicationManagementService applications() {
         return services().applications();
@@ -163,8 +168,28 @@ public class ApplicationsApiServlet extends ApiServlet {
         }
     }
 
-    private String extractSubmittedFileName(Part part) {
-        String submittedFileName = part.getSubmittedFileName();
+    static String extractSubmittedFileName(Part part) {
+        // Part.getSubmittedFileName() was added in Servlet 3.1. Read the header
+        // instead so uploads also work on Servlet 3.0.
+        String disposition = part.getHeader("Content-Disposition");
+        String submittedFileName = null;
+        if (disposition != null) {
+            Matcher parameters = DISPOSITION_PARAMETER.matcher(disposition);
+            while (parameters.find()) {
+                if (!"filename".equalsIgnoreCase(parameters.group(1))) {
+                    continue;
+                }
+                submittedFileName = parameters.group(2).trim();
+                if (submittedFileName.startsWith("\"")) {
+                    if (submittedFileName.length() < 2 || !submittedFileName.endsWith("\"")) {
+                        throw new IllegalArgumentException("Uploaded file name is invalid");
+                    }
+                    submittedFileName = submittedFileName.substring(1, submittedFileName.length() - 1)
+                        .replace("\\\"", "\"").replace("\\\\", "\\");
+                }
+                break;
+            }
+        }
         if (submittedFileName == null || submittedFileName.isBlank()) {
             throw new IllegalArgumentException("Uploaded file name is invalid");
         }

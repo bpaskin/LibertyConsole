@@ -1,0 +1,7 @@
+# Use the same WAB and security configuration with the Java EE servlet namespace.
+-include: ~../console-bundle/bnd.bnd
+Bundle-SymbolicName: ${bundle.symbolicName}.javax
+Bundle-Name: Liberty Admin Console (Servlet 3.0-4.0)
+Import-Package: javax.servlet.*;version="[2.6,3)",*
+
+# Liberty exports Servlet 3.0/3.1/4.0 packages as OSGi versions 2.6/2.7/2.8.
