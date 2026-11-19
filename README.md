@@ -21,21 +21,34 @@ remove), resources, batch jobs, monitoring, logs and a configuration editor. The
 
 ## Screenshots
 
-Taken on an Open Liberty 26.0.0.9 server with `mpMetrics-5.1` and three sample applications,
-after two minutes of steady traffic.
+Taken on a running Liberty 26.0.0.6 server (Java 25) with the `jakartaBatchExample`
+application deployed and `mpMetrics-5.1` enabled.
 
-**Dashboard**: server status, applications, memory and uptime at a glance.
+**Dashboard**: server status, applications, memory, uptime and batch jobs at a glance.
 
 ![Dashboard](docs/images/dashboard.png)
 
-**Monitoring**: memory, CPU, thread and garbage-collection charts refreshed every 10 seconds,
-and per-application request counts, response times, errors and request rates.
+**Server**: server details, with Run GC and Thread Dump actions.
 
-![Monitoring](docs/images/monitoring.png)
+![Server](docs/images/server.png)
 
 **Applications**: every application on the server, with start, stop, restart and undeploy.
 
 ![Applications](docs/images/applications.png)
+
+**Batch**: Jakarta Batch job instances with their status and executions.
+
+![Batch](docs/images/batch.png)
+
+**Monitoring**: memory, CPU, thread and garbage-collection charts refreshed every 10 seconds,
+and per-application request metrics.
+
+![Monitoring](docs/images/monitoring.png)
+
+**Configuration**: edit `server.xml` and other configuration files in the browser. A backup is
+created before every save.
+
+![Configuration](docs/images/configuration.png)
 
 ## Quick start
 
