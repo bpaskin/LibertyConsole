@@ -25,6 +25,18 @@
                     <i class="fas fa-server"></i>
                     <span>Server</span>
                 </a>
+                <a href="#collective" class="nav-item collective-only" data-page="collective" hidden>
+                    <i class="fas fa-network-wired"></i><span>Collective</span>
+                </a>
+                <a href="#clusters" class="nav-item collective-only" data-page="clusters" hidden>
+                    <i class="fas fa-layer-group"></i><span>Clusters</span>
+                </a>
+                <a href="#servers" class="nav-item collective-only" data-page="servers" hidden>
+                    <i class="fas fa-server"></i><span>Servers</span>
+                </a>
+                <a href="#remote-monitoring" class="nav-item collective-only" data-page="remote-monitoring" hidden>
+                    <i class="fas fa-chart-line"></i><span>Remote Monitoring</span>
+                </a>
                 <a href="#applications" class="nav-item" data-page="applications">
                     <i class="fas fa-cube"></i>
                     <span>Applications</span>
@@ -86,6 +98,12 @@
                         <p>Overview of your Liberty server</p>
                     </div>
 
+                    <div id="collective-dashboard" class="card collective-only" hidden>
+                        <div class="card-header"><h3><i class="fas fa-network-wired"></i> Collective</h3>
+                            <button class="btn btn-sm btn-secondary" onclick="navigateToPage('collective')">View Collective</button>
+                        </div>
+                        <div class="card-body" id="collective-dashboard-summary" aria-live="polite"></div>
+                    </div>
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-icon blue">
@@ -200,7 +218,20 @@
                         </button>
                     </div>
 
-                    <div class="card">
+                    <div class="collective-toolbar collective-only" id="application-scope-toolbar" hidden>
+                        <div class="form-group"><label for="application-scope">Show applications on</label>
+                            <select id="application-scope" onchange="changeApplicationScope()"><option value="local">This server</option></select>
+                        </div>
+                        <p class="text-muted">Collective applications are shown once for each server where they are deployed.</p>
+                    </div>
+                    <div id="collective-applications" class="card" hidden>
+                        <div class="card-header collective-toolbar"><div class="form-group"><label for="collective-app-action-target">Application in selected scope</label>
+                            <select id="collective-app-action-target"></select></div>
+                            <div id="collective-app-bulk-actions" class="action-buttons"></div>
+                        </div>
+                        <div class="card-body collective-table" id="collective-applications-table"></div>
+                    </div>
+                    <div class="card" id="local-applications">
                         <div class="card-body">
                             <table class="data-table" id="applications-table">
                                 <thead>
@@ -220,6 +251,58 @@
                             </table>
                         </div>
                     </div>
+                </div>
+
+                <!-- Collective pages reuse the console's shared cards, tables and themes. -->
+                <div id="page-collective" class="page">
+                    <div class="page-header"><h2>Collective</h2><p id="collective-name">Collective overview</p></div>
+                    <div id="collective-overview" aria-live="polite"></div>
+                    <div class="card"><div class="card-header"><h3>Hosts</h3></div>
+                        <div class="card-body collective-table" id="collective-hosts"></div></div>
+                </div>
+                <div id="page-clusters" class="page">
+                    <div class="page-header"><h2>Clusters</h2><p>Manage clusters and their member servers</p></div>
+                    <div class="card"><div class="card-body collective-table" id="collective-clusters" aria-live="polite"></div></div>
+                </div>
+                <div id="page-servers" class="page">
+                    <div class="page-header"><h2>Servers</h2><p>Servers registered with this collective</p></div>
+                    <div class="collective-toolbar"><div class="form-group"><label for="collective-server-filter">Cluster</label>
+                        <select id="collective-server-filter" onchange="renderCollectiveServers()"><option value="">All servers</option></select>
+                    </div></div>
+                    <div class="card"><div class="card-body collective-table" id="collective-servers" aria-live="polite"></div></div>
+                </div>
+
+                <div id="page-remote-monitoring" class="page">
+                    <div class="page-header"><h2>Remote Monitoring</h2>
+                        <div class="remote-monitoring-actions">
+                            <button class="btn btn-secondary" id="remote-monitoring-refresh" onclick="refreshRemoteMonitoring()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                            <label class="remote-refresh-label"><input type="checkbox" id="remote-monitoring-auto" onchange="toggleRemoteMonitoringRefresh()" checked> Auto-refresh (10s)</label>
+                        </div>
+                    </div>
+                    <div class="collective-toolbar"><div class="form-group"><label for="remote-monitoring-server">Server</label>
+                        <select id="remote-monitoring-server" onchange="selectRemoteMonitoringServer()"></select>
+                    </div></div>
+                    <p id="remote-monitoring-target" class="text-muted collective-path"></p>
+                    <div id="remote-monitoring-status" class="alert alert-info" role="status" aria-live="polite">Select a server to view its live metrics.</div>
+                    <p id="remote-monitoring-updated" class="text-muted remote-monitoring-updated"></p>
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-memory"></i></div><div class="stat-content"><h3 id="remote-heap-value">—</h3><p>Heap Used</p></div></div>
+                        <div class="stat-card"><div class="stat-icon green"><i class="fas fa-microchip"></i></div><div class="stat-content"><h3 id="remote-cpu-value">—</h3><p>Process CPU</p></div></div>
+                        <div class="stat-card"><div class="stat-icon purple"><i class="fas fa-layer-group"></i></div><div class="stat-content"><h3 id="remote-threads-value">—</h3><p>Live Threads</p></div></div>
+                        <div class="stat-card"><div class="stat-icon orange"><i class="fas fa-clock"></i></div><div class="stat-content"><h3 id="remote-uptime-value">—</h3><p>Uptime</p></div></div>
+                    </div>
+                    <p id="remote-chart-status" class="text-muted" hidden></p>
+                    <div class="charts-grid remote-charts-grid">
+                        <div class="card"><div class="card-header"><h3><i class="fas fa-memory"></i> Memory Usage</h3></div><div class="card-body"><canvas id="remote-memory-chart" role="img" aria-label="Selected server heap usage in megabytes"></canvas></div></div>
+                        <div class="card"><div class="card-header"><h3><i class="fas fa-microchip"></i> CPU Usage</h3></div><div class="card-body"><canvas id="remote-cpu-chart" role="img" aria-label="Selected server process CPU percentage"></canvas></div></div>
+                        <div class="card"><div class="card-header"><h3><i class="fas fa-layer-group"></i> Thread Count</h3></div><div class="card-body"><canvas id="remote-threads-chart" role="img" aria-label="Selected server live thread count"></canvas></div></div>
+                        <div class="card"><div class="card-header"><h3><i class="fas fa-recycle"></i> Garbage Collection</h3></div><div class="card-body"><canvas id="remote-gc-chart" role="img" aria-label="Selected server garbage collection time in milliseconds per second"></canvas></div></div>
+                    </div>
+                    <div class="card"><div class="card-header"><h3>Application Metrics</h3></div><div class="card-body collective-table">
+                        <p id="remote-application-status" class="text-muted"></p><div id="remote-application-metrics"></div>
+                    </div></div>
+                    <div class="card"><div class="card-header"><h3>Detailed JVM Metrics</h3></div><div class="card-body"><div id="remote-jvm-details" class="info-grid"></div></div></div>
+                    <div class="card"><div class="card-header"><h3>Garbage Collectors</h3></div><div class="card-body collective-table" id="remote-gc-details"></div></div>
                 </div>
 
                 <!-- Resources Page -->
@@ -559,6 +642,15 @@
         </div>
     </div>
 
+    <div id="collective-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="collective-modal-title">
+        <div class="modal-content collective-modal-content">
+            <div class="modal-header"><h3 id="collective-modal-title">Collective</h3>
+                <button class="modal-close" onclick="closeCollectiveDialog()" aria-label="Close">&times;</button></div>
+            <div class="modal-body" id="collective-modal-body"></div>
+        </div>
+    </div>
     <script src="js/app.js"></script>
+    <script src="js/collective.js"></script>
+    <script src="js/remote-monitoring.js"></script>
 </body>
 </html>

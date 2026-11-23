@@ -147,6 +147,7 @@ async function checkAuthentication() {
         
         // Session valid, initialize app
         await loadCurrentUser();
+        await initializeCollective();
         
         initializeNavigation();
         loadDashboardData();
@@ -165,6 +166,7 @@ async function loadCurrentUser() {
             return;
         }
         const user = await response.json();
+        collectiveReadOnly = !user.administrator;
         const label = user.readOnly ? `${user.name} (read-only)` : user.name;
         document.getElementById('username').textContent = label;
     } catch (error) {
@@ -195,6 +197,7 @@ function initializeNavigation() {
 }
 
 function navigateToPage(page) {
+    if (currentPage === 'remote-monitoring' && page !== 'remote-monitoring') stopRemoteMonitoring();
     // Stop metrics refresh when leaving monitoring page
     if (currentPage === 'monitoring' && page !== 'monitoring') {
         if (metricsRefreshInterval) {
@@ -222,7 +225,7 @@ function navigateToPage(page) {
     
     // Update breadcrumb
     document.getElementById('current-page').textContent =
-        page.charAt(0).toUpperCase() + page.slice(1);
+        page === 'remote-monitoring' ? 'Remote Monitoring' : page.charAt(0).toUpperCase() + page.slice(1);
     
     currentPage = page;
     
@@ -237,6 +240,14 @@ function navigateToPage(page) {
 
 function loadPageData(page) {
     switch(page) {
+        case 'remote-monitoring':
+            startRemoteMonitoring();
+            break;
+        case 'collective':
+        case 'clusters':
+        case 'servers':
+            loadCollective();
+            break;
         case 'dashboard':
             loadDashboardData();
             break;
@@ -267,6 +278,7 @@ function loadPageData(page) {
 // Dashboard data loading
 async function loadDashboardData() {
     try {
+        if (collectiveAvailable) loadCollective();
         // Load server info
         const serverInfo = await fetchAPI('/server/info');
         updateDashboardStats(serverInfo);
@@ -397,6 +409,9 @@ async function loadServerDetails() {
 
 // Applications management
 async function loadApplications() {
+    if (collectiveAvailable && applicationScope !== 'local') {
+        return loadCollectiveApplications();
+    }
     try {
         const applications = await fetchAPI('/applications');
         const tbody = document.querySelector('#applications-table tbody');
@@ -486,6 +501,9 @@ async function undeployApplication(name) {
 
 // Deploy application dialog
 function showDeployDialog() {
+    if (collectiveAvailable && applicationScope !== 'local') {
+        return showCollectiveDeployDialog();
+    }
     document.getElementById('deploy-modal').classList.add('active');
 }
 

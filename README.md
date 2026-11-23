@@ -19,6 +19,140 @@ remove), resources, batch jobs, monitoring, logs and a configuration editor. The
 * The context path is `/console` by default and can be changed with `<usr_console contextPath="..."/>`.
 * Applications are started, stopped and restarted through Liberty's `ApplicationMBean`.
 
+On a **WebSphere Liberty ND collective controller**, the same console also discovers
+the collective and shows hosts, clusters, member servers and application deployments.
+Standalone servers keep their existing navigation and behavior. The console does not
+enable collective features or create a collective automatically.
+
+## ND collectives
+
+Install `usr:console-1.0` on an existing collective controller with
+`collectiveController-1.0` enabled. The controller's public management MBeans are
+discovered at runtime; no IBM collective implementation packages are linked into the
+console. Collective-wide management is provided by the controller. Installing the
+console on a member alone continues to provide that member's local console.
+
+The additional screens use the existing console styling and light/dark themes:
+
+* **Collective**: collective name, host inventory, cluster/server counts, running
+  servers and application deployment counts; also summarized on the dashboard.
+* **Clusters**: state and member counts, links to member servers and applications,
+  start/stop all members, and generate the cluster's web server plugin configuration.
+* **Servers**: host, user directory, controller/member identity, cluster and state;
+  start/stop, Java dumps, live JVM details, member logs and configuration editing.
+* **Remote Monitoring**: select a member directly, or use **Servers → Monitor**.
+  View live heap, process CPU, threads and garbage-collection charts, application
+  request metrics, JVM details and per-collector totals.
+* **Applications**: select the whole collective, a cluster, a member, or the local
+  controller. View each deployment and its context roots; start, stop and restart
+  individual instances or all instances of an application within the selected scope.
+  Deploy a WAR/EAR to a server, a cluster, or all non-controller members.
+
+Local resources, batch, monitoring, logs and configuration are explicitly labelled
+as local when collective controls are available. Application rows identify both
+server and host; identical server names on different hosts/user directories remain
+separate targets. Empty collectives are supported, and repository failures are shown
+as errors rather than an empty inventory.
+
+### Remote monitoring
+
+Remote Monitoring reads the selected server's standard JVM MBeans through the
+controller's REST JMX connector. Heap, CPU, thread and GC monitoring do not require
+`mpMetrics` or `monitor-1.0`. No console feature needs to be installed on members,
+and monitoring does not use SSH or collect another password. The REST connector
+enforces its management permissions; it can refuse a reader's remote JVM reads
+even though the console's collective inventory is readable.
+
+The page samples immediately, then every 10 seconds while auto-refresh is selected.
+Charts keep the latest 20 samples. Switching servers resets the history; leaving
+the page cancels pending requests and polling. A restarted JVM resets chart history
+and rate baselines. Offline, unsupported and unauthorized metrics are displayed as
+unavailable, with gaps in the charts instead of artificial zero readings.
+
+CPU is the JVM's process CPU load, expressed as a percentage; some JVMs need a second
+sample before this is available. GC charts show collection time in milliseconds per
+second; collector totals also show collection counts and total collection time.
+GC and request rates need two samples from the same JVM. Each sample refreshes the
+selected member's application metadata, so deployment and application-state changes
+can appear while monitoring remains open.
+
+Enable `monitor-1.0` on a member for application request counts, average response
+times, request rates and, where exposed, errors. The console uses `HttpServerStats`
+and falls back to `ServletStats`. Some Liberty REST connector versions cannot read
+HTTP metric ObjectNames containing route delimiters; the page uses servlet counters
+and explains the limitation. Servlet MBeans do not provide error counts. Missing
+counters remain unavailable, including when an application has no recorded traffic.
+Core JVM monitoring continues when application monitoring is absent.
+
+### Remote operations
+
+Server and cluster lifecycle commands, dumps and routed file transfers use the
+collective's existing host SSH/RPC credentials. Configure and verify those credentials
+as you would for Liberty Admin Center. The console does not collect another password.
+Member application lifecycle and JVM reads use the controller's REST JMX routing
+headers, with the console user's existing sign-in session. When using a reverse proxy,
+expose `/IBMJMXConnectorREST` on the same origin as `/console`.
+
+Readers can view the collective inventory. Mutating console endpoints require
+`administrator-role`, and collective action buttons are disabled for readers.
+The REST connector independently enforces its own management roles; a reader may
+therefore be refused live member JVM/file reads even though inventory remains visible.
+
+For collective deployment, allow file writes on each target member:
+
+```xml
+<remoteFileAccess>
+    <writeDir>${server.config.dir}/apps</writeDir>
+    <writeDir>${server.config.dir}/configDropins/overrides</writeDir>
+</remoteFileAccess>
+```
+
+The target must be running. Deployment uploads `apps/<name>.war` or `.ear`, then
+creates `configDropins/overrides/console-<name>.xml`. It preserves an existing
+application/archive/configuration with that name. If writing the configuration
+fails, the newly uploaded archive is removed; cleanup failures are reported.
+Application startup happens asynchronously in Liberty, so refresh to see its final
+state. Every selected target gets an individual result, including partial failures.
+
+Undeploy supports these console-managed deployments and WAR/EAR files in `dropins`
+(the latter needs write access to `${server.config.dir}/dropins`). Applications
+configured elsewhere must be removed through their owning configuration. The server
+details dialog can view/edit `server.xml`; saving checks for concurrent edits and
+writes a backup first. Configuration editing needs write access to the server
+configuration directory and backup location. Existing include and configDropins
+files are preserved. Generated cluster plugin output is reported as a controller-side
+file path, as returned by Liberty's `ClusterManager`.
+
+The feature adds Liberty collective management, not the traditional WebSphere ND
+deployment-manager/cell APIs. Collective provisioning, host registration, controller
+replication and automatic scaling remain configured through Liberty's existing tools.
+
+### Validation
+
+```bash
+mvn package
+node scripts/test-collective-ui.cjs
+node scripts/test-remote-monitoring.cjs
+python3 scripts/smoke-test.py --url https://localhost:9443/console \
+    --admin admin:change-me --reader operator:change-me-too --insecure
+```
+
+The Java suite covers optional detection, inventory, identity handling, stopped
+members, repository failures, operation allowlists, partial failures and reader
+authorization in both Servlet adapters. The dependency-free Node tests cover REST
+routing, target scopes, deployment XML escaping, overwrite prevention, rollback,
+Liberty file metadata and bulk-operation failure reporting.
+Remote monitoring tests cover JVM values, HTTP/servlet aggregation, rates, target
+isolation, restarts, unavailable metrics, cancellation, concurrent refreshes and
+polling cleanup. The smoke test also reads metadata for a registered monitoring
+target through `/api/collective/servers/<id>`.
+
+The collective integration was exercised with WebSphere Liberty 26.0.0.6 on
+Java 25, using an isolated controller, two cluster members and a standalone server.
+Checks included FORM-session routing, application start/stop, deployment with a
+custom context root, cluster-scoped restart, undeployment, cluster start/stop,
+plugin generation, reader access control and the existing standalone smoke tests.
+
 ## Screenshots
 
 Taken on a running Liberty 26.0.0.6 server (Java 25) with the `jakartaBatchExample`
@@ -97,9 +231,32 @@ The rest of this file covers each step in detail.
   (`servlet-3.0`, `servlet-3.1`, `servlet-4.0`, `servlet-5.0`, `servlet-6.0` or `servlet-6.1`).
   The console selects the Java EE (`javax.servlet`) or Jakarta EE (`jakarta.servlet`)
   adapter automatically. Servlet 3.0 is available in WebSphere Liberty; Open Liberty starts at 3.1.
-  With no servlet feature already selected, the console enables Servlet 6.0.
+  Liberty resolves a compatible Servlet version from the installed features. Select an
+  explicit `servlet-*` feature when a particular version is required; the minimal
+  configuration on Open Liberty 26.0.0.11 selected Servlet 3.1.
 * Java 17 or later to run the server
 * Maven 3.8+ and JDK 17+ to build
+
+The current console package was tested on a fresh Open Liberty **26.0.0.11** runtime
+(the latest stable release on November 23, 2026), installed from the ESA with
+`featureUtility`:
+
+| Configuration | Java | Result |
+| --- | --- | --- |
+| `usr:console-1.0` only (runtime selected Servlet 3.1) | Temurin 21.0.12.1 | Passed |
+| `servlet-4.0` + `monitor-1.0` | Temurin 21.0.12.1 | Passed |
+| `servlet-6.0` + `mpMetrics-5.1` | Temurin 21.0.12.1 | Passed |
+| `servlet-6.1` + `monitor-1.0` | Semeru OpenJ9 25.0.4.1 | Passed |
+
+All four configurations passed the existing administrator/reader smoke tests and
+live application upload, custom context root, request, stop/start/restart and
+undeployment checks. Tests also verified GC, thread dumps, exactly one console web
+application, real application request counters when monitoring was enabled, and
+`available: false` for collective capabilities. Browser checks confirmed the existing
+standalone navigation, hidden collective controls, local logs and optional metrics.
+No feature resolution/startup errors or FFDC files were produced. Open Liberty does
+not include the collective controller; ND remote monitoring remains covered by the
+WebSphere Liberty collective tests described above.
 
 Tested on Open Liberty 26.0.0.9 (Java 21): installed with featureUtility, the zip and the script, on servers with
 `servlet-5.0`, `servlet-6.0`, `servlet-6.1`, `appSecurity-5.0` + `restfulWS-3.1` + `cdi-4.0`,

@@ -23,6 +23,7 @@ import urllib.request
 
 READ_ENDPOINTS = [
     ("/api/user", "json"),
+    ("/api/collective/capabilities", "json"),
     ("/api/server/info", "json"),
     ("/api/server/memory", "json"),
     ("/api/server/health", "json"),
@@ -45,6 +46,7 @@ ADMIN_ONLY = [
     ("GET", "/api/server/threads"),
     ("PUT", "/api/configuration/server.xml"),
     ("POST", "/api/applications/upload"),
+    ("POST", "/api/collective/operations"),
 ]
 
 
@@ -111,6 +113,17 @@ def main():
     if status == 200 and "application/json" in content_type:
         check("admin has the Administrator role", json.loads(body).get("administrator") is True, body)
 
+    status, _, _, body = admin.request("GET", "/api/collective/capabilities")
+    collective = status == 200 and json.loads(body).get("available") is True
+    if collective:
+        status, _, content_type, body = admin.request("GET", "/api/collective")
+        check("GET /api/collective", status == 200 and "application/json" in content_type, f"HTTP {status}")
+        servers = json.loads(body).get("servers", []) if status == 200 else []
+        if servers:
+            path = "/api/collective/servers/" + urllib.parse.quote(servers[0]["id"], safe="")
+            status, _, content_type, metadata = admin.request("GET", path)
+            check("GET monitoring target metadata", status == 200 and json.loads(metadata).get("server", {}).get("id") == servers[0]["id"], f"HTTP {status}")
+
     if args.reader:
         user, _, password = args.reader.partition(":")
         reader = Client(args.url, context)
@@ -120,6 +133,9 @@ def main():
         check(f"sign in as {user}", True)
         status, _, _, body = reader.request("GET", "/api/server/info")
         check("reader can read server info", status == 200, f"HTTP {status}")
+        if collective:
+            status, _, _, _ = reader.request("GET", "/api/collective")
+            check("reader can read collective inventory", status == 200, f"HTTP {status}")
         for method, path in ADMIN_ONLY:
             status, _, _, _ = reader.request(method, path, b"" if method != "GET" else None, "text/plain")
             check(f"reader refused {method} {path}", status == 403, f"HTTP {status}")

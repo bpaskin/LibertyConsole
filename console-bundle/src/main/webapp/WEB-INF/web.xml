@@ -28,6 +28,10 @@
 
     <!-- REST API, under /api -->
     <servlet>
+        <servlet-name>CollectiveApi</servlet-name>
+        <servlet-class>com.ibm.liberty.admin.web.CollectiveApiServlet</servlet-class>
+    </servlet>
+    <servlet>
         <servlet-name>ServerApi</servlet-name>
         <servlet-class>com.ibm.liberty.admin.web.ServerApiServlet</servlet-class>
     </servlet>
@@ -62,6 +66,10 @@
         <servlet-class>com.ibm.liberty.admin.web.ApiNotFoundServlet</servlet-class>
     </servlet>
 
+    <servlet-mapping>
+        <servlet-name>CollectiveApi</servlet-name>
+        <url-pattern>/api/collective/*</url-pattern>
+    </servlet-mapping>
     <servlet-mapping>
         <servlet-name>ServerApi</servlet-name>
         <url-pattern>/api/server/*</url-pattern>

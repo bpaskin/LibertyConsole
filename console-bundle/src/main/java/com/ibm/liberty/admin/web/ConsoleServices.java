@@ -3,6 +3,7 @@ package com.ibm.liberty.admin.web;
 import com.ibm.liberty.admin.internal.ConsoleRuntime;
 import com.ibm.liberty.admin.service.ApplicationManagementService;
 import com.ibm.liberty.admin.service.ConfigurationService;
+import com.ibm.liberty.admin.service.CollectiveService;
 import com.ibm.liberty.admin.service.LibertyMBeans;
 import com.ibm.liberty.admin.service.LogService;
 import com.ibm.liberty.admin.service.ServerManagementService;
@@ -26,6 +27,7 @@ public final class ConsoleServices implements ServletContextListener {
     private ServerManagementService server;
     private LogService logs;
     private SettingsService settings;
+    private CollectiveService collective;
 
     /** Required by the servlet container. */
     public ConsoleServices() {
@@ -37,6 +39,7 @@ public final class ConsoleServices implements ServletContextListener {
         this.server = new ServerManagementService(applications, mbeans, runtime);
         this.logs = new LogService(runtime);
         this.settings = new SettingsService(runtime);
+        this.collective = new CollectiveService();
     }
 
     @Override
@@ -75,5 +78,9 @@ public final class ConsoleServices implements ServletContextListener {
 
     SettingsService settings() {
         return settings;
+    }
+
+    CollectiveService collective() {
+        return collective;
     }
 }
