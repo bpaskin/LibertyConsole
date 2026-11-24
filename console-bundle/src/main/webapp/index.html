@@ -17,50 +17,63 @@
                 <h1>Liberty Admin</h1>
             </div>
             <nav class="sidebar-nav">
-                <a href="#dashboard" class="nav-item active" data-page="dashboard">
+                <a href="#dashboard" class="nav-item active" data-page="dashboard" aria-current="page">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="#server" class="nav-item" data-page="server">
-                    <i class="fas fa-server"></i>
-                    <span>Server</span>
-                </a>
-                <a href="#collective" class="nav-item collective-only" data-page="collective" hidden>
-                    <i class="fas fa-network-wired"></i><span>Collective</span>
-                </a>
-                <a href="#clusters" class="nav-item collective-only" data-page="clusters" hidden>
-                    <i class="fas fa-layer-group"></i><span>Clusters</span>
-                </a>
-                <a href="#servers" class="nav-item collective-only" data-page="servers" hidden>
-                    <i class="fas fa-server"></i><span>Servers</span>
-                </a>
-                <a href="#remote-monitoring" class="nav-item collective-only" data-page="remote-monitoring" hidden>
-                    <i class="fas fa-chart-line"></i><span>Remote Monitoring</span>
-                </a>
-                <a href="#applications" class="nav-item" data-page="applications">
-                    <i class="fas fa-cube"></i>
-                    <span>Applications</span>
-                </a>
-                <a href="#resources" class="nav-item" data-page="resources">
-                    <i class="fas fa-database"></i>
-                    <span>Resources</span>
-                </a>
-                <a href="#batch" class="nav-item" data-page="batch">
-                    <i class="fas fa-tasks"></i>
-                    <span>Batch</span>
-                </a>
-                <a href="#monitoring" class="nav-item" data-page="monitoring">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Monitoring</span>
-                </a>
-                <a href="#logs" class="nav-item" data-page="logs">
-                    <i class="fas fa-file-alt"></i>
-                    <span>Logs</span>
-                </a>
-                <a href="#configuration" class="nav-item" data-page="configuration">
-                    <i class="fas fa-cog"></i>
-                    <span>Configuration</span>
-                </a>
+                <details id="nav-local" class="nav-group" open>
+                    <summary class="nav-group-toggle collective-only" hidden>
+                        <span class="nav-twisty" aria-hidden="true"></span><span>Local</span>
+                    </summary>
+                    <a href="#server" class="nav-item" data-page="server">
+                        <i class="fas fa-server"></i>
+                        <span>Server</span>
+                    </a>
+                    <a href="#applications" class="nav-item" data-page="applications" data-scope="local">
+                        <i class="fas fa-cube"></i>
+                        <span>Applications</span>
+                    </a>
+                    <a href="#resources" class="nav-item" data-page="resources">
+                        <i class="fas fa-database"></i>
+                        <span>Resources</span>
+                    </a>
+                    <a href="#batch" class="nav-item" data-page="batch">
+                        <i class="fas fa-tasks"></i>
+                        <span>Batch</span>
+                    </a>
+                    <a href="#monitoring" class="nav-item" data-page="monitoring">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Monitoring</span>
+                    </a>
+                    <a href="#logs" class="nav-item" data-page="logs">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Logs</span>
+                    </a>
+                    <a href="#configuration" class="nav-item" data-page="configuration">
+                        <i class="fas fa-cog"></i>
+                        <span>Configuration</span>
+                    </a>
+                </details>
+                <details id="nav-remote" class="nav-group collective-only" hidden>
+                    <summary class="nav-group-toggle">
+                        <span class="nav-twisty" aria-hidden="true"></span><span>Remote</span>
+                    </summary>
+                    <a href="#collective" class="nav-item" data-page="collective">
+                        <i class="fas fa-network-wired"></i><span>Collective</span>
+                    </a>
+                    <a href="#clusters" class="nav-item" data-page="clusters">
+                        <i class="fas fa-layer-group"></i><span>Clusters</span>
+                    </a>
+                    <a href="#servers" class="nav-item" data-page="servers">
+                        <i class="fas fa-server"></i><span>Servers</span>
+                    </a>
+                    <a href="#applications" class="nav-item" data-page="applications" data-scope="all">
+                        <i class="fas fa-cube"></i><span>Applications</span>
+                    </a>
+                    <a href="#remote-monitoring" class="nav-item" data-page="remote-monitoring">
+                        <i class="fas fa-chart-line"></i><span>Remote Monitoring</span>
+                    </a>
+                </details>
             </nav>
             <div class="sidebar-footer">
                 <div class="user-info">

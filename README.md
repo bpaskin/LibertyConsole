@@ -40,7 +40,7 @@ The additional screens use the existing console styling and light/dark themes:
   start/stop all members, and generate the cluster's web server plugin configuration.
 * **Servers**: host, user directory, controller/member identity, cluster and state;
   start/stop, Java dumps, live JVM details, member logs and configuration editing.
-* **Remote Monitoring**: select a member directly, or use **Servers → Monitor**.
+* **Remote Monitoring**: select a member directly, or use **Remote → Servers → Monitor**.
   View live heap, process CPU, threads and garbage-collection charts, application
   request metrics, JVM details and per-collector totals.
 * **Applications**: select the whole collective, a cluster, a member, or the local
@@ -48,11 +48,38 @@ The additional screens use the existing console styling and light/dark themes:
   individual instances or all instances of an application within the selected scope.
   Deploy a WAR/EAR to a server, a cluster, or all non-controller members.
 
-Local resources, batch, monitoring, logs and configuration are explicitly labelled
-as local when collective controls are available. Application rows identify both
-server and host; identical server names on different hosts/user directories remain
-separate targets. Empty collectives are supported, and repository failures are shown
-as errors rather than an empty inventory.
+### Navigation
+
+**Dashboard** is always visible at the top of the sidebar. On a collective
+controller, it shows the local server's cards together with a collective summary.
+The remaining pages are grouped into **Local** and **Remote** twisties, both
+initially collapsed:
+
+| Navigation | Pages and scope |
+| --- | --- |
+| Dashboard | Current server overview and, when available, collective summary |
+| Local | Server, Applications, Resources, Batch, Monitoring, Logs and Configuration for this server |
+| Remote | Collective, Clusters, Servers, Applications and Remote Monitoring across registered members |
+
+Click a twisty, or focus it and press **Enter** or **Space**, to expand or collapse
+it. The two sections expand independently. Selecting a page through another screen
+opens its section automatically; returning to Dashboard leaves both sections in
+their current state. A standalone server, including Open Liberty, keeps the original
+flat navigation without twisties or remote pages.
+
+Each section has its own **Applications** link. **Local → Applications** selects
+**This server**; **Remote → Applications** selects **Collective — all servers**.
+To list applications on a cluster, use **Remote → Clusters → Applications**, or
+choose **Cluster: ...** under **Show applications on**. Changing the scope also
+updates the selected navigation item and opens the appropriate section.
+
+For a member's logs or configuration, use **Remote → Servers → Details**, then
+**View messages.log** or **View / edit server.xml**. The **Local → Logs** and
+**Local → Configuration** pages continue to refer to the console's own server.
+
+Application rows identify both server and host; identical server names on different
+hosts/user directories remain separate targets. Empty collectives are supported,
+and repository failures are shown as errors rather than an empty inventory.
 
 ### Remote monitoring
 
@@ -153,10 +180,62 @@ Checks included FORM-session routing, application start/stop, deployment with a
 custom context root, cluster-scoped restart, undeployment, cluster start/stop,
 plugin generation, reader access control and the existing standalone smoke tests.
 
+The navigation update was checked on the running collective controller and on
+standalone Open Liberty 26.0.0.11: Dashboard stays above both groups, the twisties
+work with the keyboard, local/collective application scope selects the correct
+navigation item, and standalone navigation stays flat. The packaged feature passed
+86 Java tests across both adapters and 35 JavaScript tests.
+
 ## Screenshots
 
-Taken on a running Liberty 26.0.0.6 server (Java 25) with the `jakartaBatchExample`
-application deployed and `mpMetrics-5.1` enabled.
+### Collective controller
+
+Captured from the current console on WebSphere Liberty 26.0.0.6 (Java 25) on
+November 24, 2026, with two running cluster members. The monitoring charts and
+application counters show live data, including requests generated against the
+sample application.
+
+**Dashboard**: always visible above the collapsed Local and Remote twisties,
+with the local server overview and collective summary.
+
+![Collective dashboard with Dashboard above both collapsed groups](docs/images/collective-dashboard.jpg)
+
+**Local**: the expanded section contains the controller's own server controls,
+applications, resources, batch, monitoring, logs and configuration.
+
+![Local section expanded on the controller's Server page](docs/images/collective-local-server.jpg)
+
+**Collective**: the expanded Remote section and the collective's hosts, clusters,
+registered servers, running servers and application deployment counts.
+
+![Remote section expanded on the Collective overview](docs/images/collective-overview.jpg)
+
+**Clusters**: member counts, links to servers and applications, lifecycle actions
+and web server plugin generation.
+
+![Cluster inventory and actions](docs/images/collective-clusters.jpg)
+
+**Servers**: filter by cluster to see each member's identity, state and controls,
+including Details, Monitor and Applications.
+
+![Running members of the selected cluster](docs/images/collective-servers.jpg)
+
+**Applications**: the selected cluster's deployments, with a row for each server,
+context roots, state and individual or scoped lifecycle actions.
+
+![Applications deployed across the selected cluster](docs/images/collective-applications.jpg)
+
+**Remote Monitoring**: the selected member's live heap, CPU, threads and GC charts,
+application request metrics, JVM details and garbage collector totals. This runtime
+uses servlet counters when HTTP route metrics cannot be read through its REST
+connector; the page explains why error counts are unavailable.
+
+![Live remote member monitoring and application request metrics](docs/images/collective-remote-monitoring.jpg)
+
+### Standalone server
+
+These examples show the unchanged flat navigation on Liberty 26.0.0.6 (Java 25),
+with `jakartaBatchExample` deployed and `mpMetrics-5.1` enabled.
 
 **Dashboard**: server status, applications, memory, uptime and batch jobs at a glance.
 
@@ -237,7 +316,7 @@ The rest of this file covers each step in detail.
 * Java 17 or later to run the server
 * Maven 3.8+ and JDK 17+ to build
 
-The current console package was tested on a fresh Open Liberty **26.0.0.11** runtime
+Standalone compatibility was tested on a fresh Open Liberty **26.0.0.11** runtime
 (the latest stable release on November 23, 2026), installed from the ESA with
 `featureUtility`:
 
@@ -261,7 +340,8 @@ WebSphere Liberty collective tests described above.
 Tested on Open Liberty 26.0.0.9 (Java 21): installed with featureUtility, the zip and the script, on servers with
 `servlet-5.0`, `servlet-6.0`, `servlet-6.1`, `appSecurity-5.0` + `restfulWS-3.1` + `cdi-4.0`,
 and `jakartaee-10.0` + `adminCenter-1.0`.
-WebSphere Liberty has the same SPIs but wasn't part of that testing.
+That earlier installation matrix covered Open Liberty; the WebSphere Liberty
+collective checks are described above.
 
 The Servlet compatibility update was also tested on Open Liberty 26.0.0.9 (Java 21)
 with `servlet-3.1`, `servlet-4.0`, `servlet-5.0`, `servlet-6.0`, `servlet-6.1`,
@@ -442,6 +522,10 @@ Paths are relative to the context path (default `/console`).
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/api/user` | Signed-in user and roles |
+| GET | `/api/collective/capabilities` | Optional collective detection; `available: false` on a standalone server |
+| GET | `/api/collective` | Hosts, clusters, servers and application deployments on a collective controller |
+| GET | `/api/collective/servers/{id}` | Registered server identity and fresh application metadata for remote monitoring; unknown IDs return 404 |
+| POST | `/api/collective/operations` | Administrator; JSON `kind`, `target`, `action`. Server actions: `start`, `stop`, `dump`; cluster actions: `start`, `stop`, `plugin` |
 | GET | `/api/server/info`, `/memory`, `/health`, `/threadpools`, `/metrics/applications` | |
 | GET | `/api/server/threads` | text/plain, Administrator |
 | POST | `/api/server/gc` | Administrator |

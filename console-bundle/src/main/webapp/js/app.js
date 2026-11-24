@@ -191,12 +191,32 @@ function initializeNavigation() {
         item.addEventListener('click', function(e) {
             e.preventDefault();
             const page = this.getAttribute('data-page');
-            navigateToPage(page);
+            navigateToPage(page, this.getAttribute('data-scope'));
         });
     });
 }
 
-function navigateToPage(page) {
+function updateNavigationSelection(page = currentPage) {
+    const scope = collectiveAvailable && applicationScope !== 'local' ? 'all' : 'local';
+    document.querySelectorAll('.nav-item').forEach(item => {
+        const active = item.getAttribute('data-page') === page &&
+            (page !== 'applications' || item.getAttribute('data-scope') === scope);
+        item.classList.toggle('active', active);
+        if (active) {
+            item.setAttribute('aria-current', 'page');
+            const group = item.closest('.nav-group');
+            if (collectiveAvailable && group) group.open = true;
+        } else {
+            item.removeAttribute('aria-current');
+        }
+    });
+}
+
+function navigateToPage(page, scope) {
+    if (page === 'applications' && collectiveAvailable && scope) {
+        applicationScope = scope;
+        updateApplicationScopes();
+    }
     if (currentPage === 'remote-monitoring' && page !== 'remote-monitoring') stopRemoteMonitoring();
     // Stop metrics refresh when leaving monitoring page
     if (currentPage === 'monitoring' && page !== 'monitoring') {
@@ -212,10 +232,7 @@ function navigateToPage(page) {
     }
     
     // Update active nav item
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('active');
-    });
-    document.querySelector(`[data-page="${page}"]`).classList.add('active');
+    updateNavigationSelection(page);
     
     // Update page visibility
     document.querySelectorAll('.page').forEach(p => {

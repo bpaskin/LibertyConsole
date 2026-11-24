@@ -62,11 +62,9 @@ async function initializeCollective() {
         collectiveAvailable = capabilities.available === true;
         if (!collectiveAvailable) return;
         document.querySelectorAll('.collective-only').forEach(element => { element.hidden = false; });
-        document.querySelector('[data-page="server"] span').textContent = 'Local Server';
-        for (const page of ['resources', 'monitoring', 'logs', 'configuration', 'batch']) {
-            const label = document.querySelector(`[data-page="${page}"] span`);
-            label.textContent = `Local ${label.textContent}`;
-        }
+        document.querySelector('.sidebar-nav').classList.add('collective-navigation');
+        document.getElementById('nav-local').open = false;
+        document.getElementById('nav-remote').open = false;
         applicationScope = 'all';
         await loadCollective();
     } catch (error) {
@@ -120,8 +118,8 @@ async function loadCollective() {
 function updateApplicationScopes() {
     const select = document.getElementById('application-scope');
     select.replaceChildren(new Option('Collective — all servers', 'all'), new Option('This server', 'local'));
-    collectiveData.clusters.forEach(cluster => select.add(new Option(`Cluster: ${cluster.name}`, `cluster:${cluster.name}`)));
-    collectiveData.servers.forEach(server => select.add(new Option(`Server: ${server.name} (${server.host}, ${server.userDir})`, `server:${server.id}`)));
+    (collectiveData?.clusters || []).forEach(cluster => select.add(new Option(`Cluster: ${cluster.name}`, `cluster:${cluster.name}`)));
+    (collectiveData?.servers || []).forEach(server => select.add(new Option(`Server: ${server.name} (${server.host}, ${server.userDir})`, `server:${server.id}`)));
     if (![...select.options].some(option => option.value === applicationScope)) applicationScope = 'all';
     select.value = applicationScope;
     document.getElementById('local-applications').hidden = applicationScope !== 'local';
@@ -132,6 +130,7 @@ function updateApplicationScopes() {
 function changeApplicationScope() {
     applicationScope = document.getElementById('application-scope').value;
     updateApplicationScopes();
+    updateNavigationSelection();
     loadApplications();
 }
 
